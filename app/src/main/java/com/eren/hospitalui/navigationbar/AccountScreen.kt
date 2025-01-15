@@ -52,32 +52,15 @@ fun AccountScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .background(Color(0xFFFFFFFF))
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "My Account",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2D3E50)
-                    ),
-                    modifier = Modifier.align(Alignment.CenterVertically)
-                )
+            Text(
+                text = "Admin Account Management",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
 
-                Image(
-                    painter = painterResource(id = R.drawable.hospital_logo),
-                    contentDescription = "Hospital Logo",
-                    modifier = Modifier.size(80.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Account Information",

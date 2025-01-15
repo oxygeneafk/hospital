@@ -11,7 +11,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "hospital.db"
-        private const val DATABASE_VERSION = 3
+        private const val DATABASE_VERSION = 4 // Version number updated
 
         // Tablo ve sütun isimleri
         const val TABLE_USERS = "users"
@@ -19,6 +19,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val TABLE_ADMINS = "admins"
         const val TABLE_DOCTORS = "doctors"
         const val TABLE_REPORTS = "reports"
+        const val TABLE_ANNOUNCEMENTS = "announcements" // New table for announcements
 
         const val COLUMN_ID = "id"
         const val COLUMN_NAME = "name"
@@ -40,61 +41,75 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val COLUMN_REPORT_TITLE = "title"
         const val COLUMN_REPORT_CONTENT = "content"
         const val COLUMN_REPORT_USERNAME = "username"
+        const val COLUMN_ANNOUNCEMENT_ID = "id" // New column for announcement ID
+        const val COLUMN_ANNOUNCEMENT_TITLE = "title" // New column for announcement title
+        const val COLUMN_ANNOUNCEMENT_CONTENT = "content" // New column for announcement content
+        const val COLUMN_ANNOUNCEMENT_TIMESTAMP = "timestamp" // New column for announcement timestamp
     }
 
     override fun onCreate(db: SQLiteDatabase) {
         val CREATE_USERS_TABLE = """
-        CREATE TABLE $TABLE_USERS (
-            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            $COLUMN_NAME TEXT NOT NULL,
-            $COLUMN_SURNAME TEXT NOT NULL,
-            $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
-            $COLUMN_PASSWORD TEXT NOT NULL,
-            $COLUMN_BLOOD_GROUP TEXT,
-            $COLUMN_ADDRESS TEXT
-        )
-        """
+    CREATE TABLE $TABLE_USERS (
+        $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+        $COLUMN_NAME TEXT NOT NULL,
+        $COLUMN_SURNAME TEXT NOT NULL,
+        $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
+        $COLUMN_PASSWORD TEXT NOT NULL,
+        $COLUMN_BLOOD_GROUP TEXT,
+        $COLUMN_ADDRESS TEXT
+    )
+    """
 
         val CREATE_APPOINTMENTS_TABLE = """
-            CREATE TABLE $TABLE_APPOINTMENTS (
-                $COLUMN_APPOINTMENT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_APPOINTMENT_DATE TEXT NOT NULL,
-                $COLUMN_APPOINTMENT_TIME TEXT NOT NULL,
-                $COLUMN_DOCTOR_NAME TEXT NOT NULL,
-                $COLUMN_APPOINTMENT_DEPARTMENT TEXT NOT NULL
-            )
-        """
+        CREATE TABLE $TABLE_APPOINTMENTS (
+            $COLUMN_APPOINTMENT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_APPOINTMENT_DATE TEXT NOT NULL,
+            $COLUMN_APPOINTMENT_TIME TEXT NOT NULL,
+            $COLUMN_DOCTOR_NAME TEXT NOT NULL,
+            $COLUMN_APPOINTMENT_DEPARTMENT TEXT NOT NULL
+        )
+    """
 
         val CREATE_ADMINS_TABLE = """
-            CREATE TABLE $TABLE_ADMINS (
-                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_ADMIN_USERNAME TEXT NOT NULL UNIQUE,
-                $COLUMN_ADMIN_PASSWORD TEXT NOT NULL
-            )
-        """
+        CREATE TABLE $TABLE_ADMINS (
+            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_ADMIN_USERNAME TEXT NOT NULL UNIQUE,
+            $COLUMN_ADMIN_PASSWORD TEXT NOT NULL
+        )
+    """
 
         val CREATE_DOCTORS_TABLE = """
-            CREATE TABLE $TABLE_DOCTORS (
-                $COLUMN_DOCTOR_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_NAME TEXT NOT NULL,
-                $COLUMN_DOCTOR_DEPARTMENT TEXT NOT NULL
-            )
-        """
+        CREATE TABLE $TABLE_DOCTORS (
+            $COLUMN_DOCTOR_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_NAME TEXT NOT NULL,
+            $COLUMN_DOCTOR_DEPARTMENT TEXT NOT NULL
+        )
+    """
 
         val CREATE_REPORTS_TABLE = """
-            CREATE TABLE $TABLE_REPORTS (
-                $COLUMN_REPORT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_REPORT_TITLE TEXT NOT NULL,
-                $COLUMN_REPORT_CONTENT TEXT NOT NULL,
-                $COLUMN_REPORT_USERNAME TEXT NOT NULL
-            )
-        """
+        CREATE TABLE $TABLE_REPORTS (
+            $COLUMN_REPORT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_REPORT_TITLE TEXT NOT NULL,
+            $COLUMN_REPORT_CONTENT TEXT NOT NULL,
+            $COLUMN_REPORT_USERNAME TEXT NOT NULL
+        )
+    """
+
+        val CREATE_ANNOUNCEMENTS_TABLE = """
+        CREATE TABLE $TABLE_ANNOUNCEMENTS (
+            $COLUMN_ANNOUNCEMENT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_ANNOUNCEMENT_TITLE TEXT NOT NULL,
+            $COLUMN_ANNOUNCEMENT_CONTENT TEXT NOT NULL,
+            $COLUMN_ANNOUNCEMENT_TIMESTAMP INTEGER NOT NULL
+        )
+    """
 
         db.execSQL(CREATE_USERS_TABLE)
         db.execSQL(CREATE_APPOINTMENTS_TABLE)
         db.execSQL(CREATE_ADMINS_TABLE)
         db.execSQL(CREATE_DOCTORS_TABLE)
         db.execSQL(CREATE_REPORTS_TABLE)
+        db.execSQL(CREATE_ANNOUNCEMENTS_TABLE) // Execute the create table statement for announcements
         Log.d("DatabaseHelper", "Database created successfully!")
     }
 
@@ -104,6 +119,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.execSQL("DROP TABLE IF EXISTS $TABLE_ADMINS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_DOCTORS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_REPORTS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_ANNOUNCEMENTS") // Drop the announcements table if it exists
         onCreate(db)
     }
 
@@ -483,6 +499,69 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.close()
     }
 
+    /**
+     * Yeni bir duyuru ekle
+     */
+    fun insertAnnouncement(title: String, content: String): Long {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put(COLUMN_ANNOUNCEMENT_TITLE, title)
+            put(COLUMN_ANNOUNCEMENT_CONTENT, content)
+            put(COLUMN_ANNOUNCEMENT_TIMESTAMP, System.currentTimeMillis())
+        }
+        val result = db.insert(TABLE_ANNOUNCEMENTS, null, values)
+        db.close()
+        return result
+    }
+
+    /**
+     * Duyuru güncelle
+     */
+    fun updateAnnouncement(id: Int, title: String, content: String): Int {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put(COLUMN_ANNOUNCEMENT_TITLE, title)
+            put(COLUMN_ANNOUNCEMENT_CONTENT, content)
+        }
+        val rowsAffected = db.update(TABLE_ANNOUNCEMENTS, values, "$COLUMN_ANNOUNCEMENT_ID = ?", arrayOf(id.toString()))
+        db.close()
+        return rowsAffected
+    }
+
+    /**
+     * Duyuru sil
+     */
+    fun deleteAnnouncement(id: Int): Int {
+        val db = writableDatabase
+        val rowsDeleted = db.delete(TABLE_ANNOUNCEMENTS, "$COLUMN_ANNOUNCEMENT_ID = ?", arrayOf(id.toString()))
+        db.close()
+        return rowsDeleted
+    }
+
+    /**
+     * Tüm duyuruları al
+     */
+    fun getAllAnnouncements(): List<Announcement> {
+        val announcements = mutableListOf<Announcement>()
+        val db = this.readableDatabase
+        val cursor: Cursor = db.rawQuery("SELECT * FROM $TABLE_ANNOUNCEMENTS", null)
+
+        if (cursor.moveToFirst()) {
+            do {
+                val announcement = Announcement(
+                    id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ANNOUNCEMENT_ID)),
+                    title = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ANNOUNCEMENT_TITLE)),
+                    content = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ANNOUNCEMENT_CONTENT)),
+                    timestamp = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ANNOUNCEMENT_TIMESTAMP))
+                )
+                announcements.add(announcement)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        db.close()
+        return announcements
+    }
+
 }
 data class User(
     val id: Int,
@@ -513,4 +592,11 @@ data class Report(
     val title: String,
     val content: String,
     val username: String
+)
+
+data class Announcement(
+    val id: Int,
+    val title: String,
+    val content: String,
+    val timestamp: Long
 )

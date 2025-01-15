@@ -56,7 +56,7 @@ fun AdminAppointmentScreen(databaseHelper: DatabaseHelper) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Admin Panel - Manage Appointments",
+            text = "Manage Appointments",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )

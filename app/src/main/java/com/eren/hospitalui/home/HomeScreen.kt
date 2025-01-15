@@ -9,34 +9,36 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Healing
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.eren.hospitalui.auth.DatabaseHelper
-import com.eren.hospitalui.auth.LoginScreen
-//import com.eren.hospitalui.nurses.list.ListScreen ŞU ANDA BUNU KULLANMIYORUM PROJEDEN ALDIM DAHA SONRA EKLENECEK
-import com.eren.hospitalui.theme.HospitalTheme
-import com.eren.hospital.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.eren.hospitalui.auth.DatabaseHelper
+import com.eren.hospitalui.auth.LoginScreen
+import com.eren.hospitalui.theme.HospitalTheme
+import com.eren.hospital.R
 import com.eren.hospitalui.admin.AdminHomeScreen
 import com.eren.hospitalui.admin.AdminLoginScreen
 import com.eren.hospitalui.navigationbar.AccountScreen
 import com.eren.hospitalui.navigationbar.AppointmentScreen
 import com.eren.hospitalui.navigationbar.MedicineScreen
+import com.eren.hospitalui.repository.AnnouncementRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,7 +80,8 @@ class MainActivity : ComponentActivity() {
                             onLogout = {
                                 navController.popBackStack("login", inclusive = false)
                             },
-                            loginViewModel = loginViewModel
+                            loginViewModel = loginViewModel,
+                            navController = navController
                         )
                     }
                     composable("adminLogin") {
@@ -89,7 +92,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("adminAccount") {
                         AdminHomeScreen(
-                            databaseHelper = databaseHelper,  // Gerekli parametreleri burada geçin
+                            databaseHelper = databaseHelper,
                             loginViewModel = loginViewModel,
                             onLogout = { /* Logout işlemi */ },
                             navController = navController
@@ -103,54 +106,84 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(
-    loginViewModel: LoginViewModel, // ViewModel, giriş ve uygulama verilerini yönetir
-    onLogout: () -> Unit, // Çıkış yapıldığında çağrılan geri çağırma
-    databaseHelper: DatabaseHelper // Veritabanı işlemleri için
+    loginViewModel: LoginViewModel,
+    onLogout: () -> Unit,
+    databaseHelper: DatabaseHelper,
+    navController: NavController
 ) {
-    var selectedTab by remember { mutableStateOf(0) } // Seçilen sekme durumu
+    var selectedTab by remember { mutableStateOf(0) }
+    val context = LocalContext.current
 
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
-                selectedTab = selectedTab, // Seçili sekme
-                onTabSelected = { selectedTab = it } // Sekme seçildiğinde çağrılır
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
             )
         }
-    ) { innerPadding -> // Ana içerik için dolgu alanı
+    ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            // Seçilen sekmeye göre ekran değişir
-            when (selectedTab) {
-                0 -> HomeScreen(onLogout = onLogout) // Ana ekran
-                1 -> AppointmentScreen(databaseHelper = databaseHelper) // Randevu alma ekranı
-                2 -> MedicineScreen(databaseHelper = databaseHelper, username = loginViewModel.username)
-                3 -> AccountScreen(databaseHelper = databaseHelper, loginViewModel = loginViewModel) // Hesap ekranı
+            Column {
+                // Üst Kısım: Başlık ve logo
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "oxyyylesnar Hospital",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.hospital_logo),
+                            contentDescription = "Hospital Logo",
+                            modifier = Modifier.size(64.dp)
+                        )
+                        IconButton(onClick = { onLogout(context = context, navController = navController) }) {
+                            Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Logout")
+                        }
+                    }
+                }
+                Box(modifier = Modifier.padding(innerPadding)) {
+                    when (selectedTab) {
+                        0 -> HomeScreenContent(onLogout = onLogout)
+                        1 -> AppointmentScreen(databaseHelper = databaseHelper)
+                        2 -> MedicineScreen(databaseHelper = databaseHelper, username = loginViewModel.username)
+                        3 -> AccountScreen(databaseHelper = databaseHelper, loginViewModel = loginViewModel)
+                    }
+                }
             }
         }
     }
 }
 
-
 @Composable
 fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
     NavigationBar {
-        // Alt gezinme çubuğu öğeleri
         val items = listOf(
-            NavigationItem("Home", Icons.Default.Home), // Ana ekran simgesi
-            NavigationItem("Appointment", Icons.Default.List), // Randevu simgesi
-            NavigationItem("Medicine", Icons.Default.Healing), // İlaç simgesi
-            NavigationItem("Account", Icons.Default.AccountCircle), // Hesap simgesi
+            NavigationItem("Home", Icons.Default.Home),
+            NavigationItem("Appointment", Icons.Default.List),
+            NavigationItem("Medicine", Icons.Default.Healing),
+            NavigationItem("Account", Icons.Default.AccountCircle),
         )
 
-        // Her bir gezinme çubuğu öğesi için
         items.forEachIndexed { index, item ->
             NavigationBarItem(
-                selected = selectedTab == index, // Seçili sekme kontrolü
-                onClick = { onTabSelected(index) }, // Sekme seçimi
+                selected = selectedTab == index,
+                onClick = { onTabSelected(index) },
                 icon = {
-                    Icon(imageVector = item.icon, contentDescription = item.label) // Sekme simgesi
+                    Icon(imageVector = item.icon, contentDescription = item.label)
                 },
                 label = {
-                    Text(text = item.label) // Sekme etiketi
+                    Text(text = item.label)
                 }
             )
         }
@@ -158,46 +191,23 @@ fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
 }
 
 @Composable
-fun HomeScreen(onLogout: () -> Unit) {
+fun HomeScreenContent(onLogout: () -> Unit) {
     Column(
         modifier = Modifier
-            .fillMaxSize() // Tüm ekranı kapla
-            .padding(16.dp) // Kenar boşlukları
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        // Üst Kısım: Başlık ve logo
-        Row(
-            modifier = Modifier
-                .fillMaxWidth() // Tüm genişliği kapla
-                .padding(bottom = 16.dp), // Alt boşluk
-            horizontalArrangement = Arrangement.SpaceBetween, // Başlık ve logoyu ayırır
-            verticalAlignment = Alignment.CenterVertically // Ortada hizalar
-        ) {
-            Text(
-                text = "My Hospital", // Uygulama başlığı
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.CenterVertically)
-            )
-
-            Image(
-                painter = painterResource(id = R.drawable.hospital_logo), // Hastane logosu
-                contentDescription = "Hospital Logo",
-                modifier = Modifier.size(64.dp) // Logo boyutu
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp)) // Aralık ekleme
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Hastane bilgisi
         Text(
-            text = "Hastanemiz", // Alt başlık
+            text = "Hastanemiz",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // Hastane detayları
         val hospitalInfo = """
             Hastanemiz oldukça saygın bir hastanedir. Sağlık hizmetlerindeki 
             uzmanlığı ve hasta memnuniyeti odaklı yaklaşımıyla bilinir. 
@@ -205,7 +215,7 @@ fun HomeScreen(onLogout: () -> Unit) {
         """.trimIndent()
 
         Text(
-            text = hospitalInfo, // Hastane açıklaması
+            text = hospitalInfo,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(vertical = 8.dp)
@@ -221,11 +231,7 @@ fun HomeScreen(onLogout: () -> Unit) {
         )
 
         // Duyurular listesi
-        val announcements = listOf(
-            "Bugün saat 14:00'te sağlık kontrolü etkinliği düzenlenecektir.",
-            "Aşı kampanyası yarın başlayacaktır.",
-            "Hastane sistem güncellemesi 18:00'de yapılacaktır."
-        )
+        val announcements = AnnouncementRepository.getAnnouncements()
 
         // Duyuru kartları
         announcements.forEach { announcement ->
@@ -237,18 +243,23 @@ fun HomeScreen(onLogout: () -> Unit) {
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
-                Text(
-                    text = announcement,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp)
-                )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = announcement.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = announcement.content,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Çıkış yap butonu
-        Button(
+        /*Button(
             onClick = onLogout,
             modifier = Modifier
                 .fillMaxWidth()
@@ -258,8 +269,8 @@ fun HomeScreen(onLogout: () -> Unit) {
                 contentColor = Color.White
             )
         ) {
-            Text("Çıkış Yap") // Çıkış yap butonu etiketi
-        }
+            Text("Çıkış Yap")
+        }*/
     }
 }
 
@@ -272,5 +283,17 @@ class LoginViewModelFactory(private val context: Context) : ViewModelProvider.Fa
             return LoginViewModel(context) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+// onLogout işlevi kullanıcı bilgilerini temizler ve giriş ekranına yönlendirir
+fun onLogout(context: Context, navController: NavController) {
+    val sharedPreferences = context.getSharedPreferences("AdminPrefs", Context.MODE_PRIVATE)
+    with(sharedPreferences.edit()) {
+        clear()
+        apply()
+    }
+    navController.navigate("login") {
+        popUpTo("main") { inclusive = true }
     }
 }
