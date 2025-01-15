@@ -9,10 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
+import com.eren.hospitalui.adminnavigationbar.AdminAccountScreen
 import com.eren.hospitalui.adminnavigationbar.AdminAppointmentScreen
 import com.eren.hospitalui.adminnavigationbar.AdminDoctorScreen
 import com.eren.hospitalui.adminnavigationbar.AdminMedicineScreen
@@ -35,8 +35,8 @@ fun AdminHomeScreen(
         val savedUsername = sharedPreferences.getString("username", null)
         val savedPassword = sharedPreferences.getString("password", null)
         if (savedUsername == null || savedPassword == null) {
-            navController.navigate("adminLogin") {
-                popUpTo("adminAccount") { inclusive = true }
+            navController.navigate("login") {
+                popUpTo("adminHome") { inclusive = true }
             }
         }
     }
@@ -47,7 +47,15 @@ fun AdminHomeScreen(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it }
             )
-        }
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {
+                onLogout(context, navController)
+            }) {
+                Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Logout")
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedTab) {
@@ -55,13 +63,10 @@ fun AdminHomeScreen(
                 1 -> AdminAppointmentScreen(databaseHelper)
                 2 -> AdminDoctorScreen(databaseHelper)
                 3 -> AdminMedicineScreen(databaseHelper)
-                //4 -> AdminAccountScreen()
+                4 -> AdminAccountScreen(databaseHelper)
             }
         }
     }
-
-    // Çıkış yapma butonu
-
 }
 
 @Composable
@@ -107,5 +112,16 @@ fun HomeScreen() {
             fontWeight = FontWeight.Bold
         )
     }
+}
 
+// onLogout işlevi kullanıcı bilgilerini temizler ve giriş ekranına yönlendirir
+fun onLogout(context: Context, navController: NavController) {
+    val sharedPreferences = context.getSharedPreferences("AdminPrefs", Context.MODE_PRIVATE)
+    with(sharedPreferences.edit()) {
+        clear()
+        apply()
+    }
+    navController.navigate("login") {
+        popUpTo("adminHome") { inclusive = true }
+    }
 }

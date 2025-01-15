@@ -1,7 +1,5 @@
 package com.eren.hospitalui.adminnavigationbar
 
-import android.content.Context
-import android.widget.Toast
 import android.app.DatePickerDialog
 import android.widget.DatePicker
 import androidx.compose.foundation.clickable
@@ -30,17 +28,15 @@ import java.util.*
 fun AdminAppointmentScreen(databaseHelper: DatabaseHelper) {
     val context = LocalContext.current
     val appointments = remember { mutableStateListOf<Appointment>() }
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
     var appointmentToDelete by remember { mutableStateOf<Appointment?>(null) }
-
-    var isEditing by remember { mutableStateOf(false) }
-    var appointmentToEdit by remember { mutableStateOf<Appointment?>(null) }
+    var appointmentToUpdate by remember { mutableStateOf<Appointment?>(null) }
     var editDate by remember { mutableStateOf("") }
     var editTime by remember { mutableStateOf("") }
     var editDoctorName by remember { mutableStateOf("") }
     var editDepartment by remember { mutableStateOf("") }
 
-    // Fetch all doctors and departments for dropdown menus
     val allDoctors = databaseHelper.getAllDoctors().map { it.name }
     val departments = listOf("Kulak Burun Boğaz", "Kardiyoloji", "Ortopedi", "Dahiliye", "Genel Cerrahi")
 
@@ -52,40 +48,11 @@ fun AdminAppointmentScreen(databaseHelper: DatabaseHelper) {
         appointments.addAll(databaseHelper.getAllAppointments())
     }
 
-    if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        appointmentToDelete?.let {
-                            databaseHelper.deleteAppointment(it.id)
-                            appointments.remove(it)
-                        }
-                        showDeleteConfirmation = false
-                        showToast(context, "Appointment deleted successfully!")
-                    }
-                ) {
-                    Text("Yes")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showDeleteConfirmation = false }
-                ) {
-                    Text("No")
-                }
-            },
-            title = { Text("Delete Appointment") },
-            text = { Text("Are you sure you want to delete this appointment?") }
-        )
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Top,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -101,200 +68,35 @@ fun AdminAppointmentScreen(databaseHelper: DatabaseHelper) {
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(appointments) { appointment ->
-                    var isEditingLocal by remember { mutableStateOf(false) }
-                    var editDateLocal by remember { mutableStateOf(appointment.date) }
-                    var editTimeLocal by remember { mutableStateOf(appointment.time) }
-                    var editDoctorNameLocal by remember { mutableStateOf(appointment.doctorName) }
-                    var editDepartmentLocal by remember { mutableStateOf(appointment.department) }
-
-                    // Doctor and Department dropdown
-                    var isDoctorDropdownExpanded by remember { mutableStateOf(false) }
-                    var isDepartmentDropdownExpanded by remember { mutableStateOf(false) }
-
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            if (isEditingLocal) {
-                                // Date Picker
-                                OutlinedTextField(
-                                    value = editDateLocal,
-                                    onValueChange = {},
-                                    label = { Text("Select Date") },
-                                    modifier = Modifier.fillMaxWidth().clickable {
-                                        val calendar = Calendar.getInstance()
-                                        val datePickerDialog = DatePickerDialog(
-                                            context,
-                                            { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
-                                                val date = "$year-${month + 1}-$dayOfMonth"
-                                                editDateLocal = date
-                                            },
-                                            calendar.get(Calendar.YEAR),
-                                            calendar.get(Calendar.MONTH),
-                                            calendar.get(Calendar.DAY_OF_MONTH)
-                                        )
-                                        datePickerDialog.show()
-                                    },
-                                    readOnly = true
-                                )
-
-                                // Time Slot Picker
-                                ExposedDropdownMenuBox(
-                                    expanded = isDoctorDropdownExpanded,
-                                    onExpandedChange = { isDoctorDropdownExpanded = !isDoctorDropdownExpanded }
-                                ) {
-                                    OutlinedTextField(
-                                        value = editTimeLocal,
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        label = { Text("Select Time") },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .menuAnchor(),
-                                        trailingIcon = {
-                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDoctorDropdownExpanded)
-                                        }
-                                    )
-                                    ExposedDropdownMenu(
-                                        expanded = isDoctorDropdownExpanded,
-                                        onDismissRequest = { isDoctorDropdownExpanded = false }
-                                    ) {
-                                        availableTimes.forEach { time ->
-                                            DropdownMenuItem(
-                                                text = { Text(time) },
-                                                onClick = {
-                                                    editTimeLocal = time
-                                                    isDoctorDropdownExpanded = false
-                                                }
-                                            )
-                                        }
-                                    }
+                            Text(text = "Date: ${appointment.date}", style = MaterialTheme.typography.bodyLarge)
+                            Text(text = "Time: ${appointment.time}", style = MaterialTheme.typography.bodyLarge)
+                            Text(text = "Doctor: ${appointment.doctorName}", style = MaterialTheme.typography.bodyLarge)
+                            Text(text = "Department: ${appointment.department}", style = MaterialTheme.typography.bodyLarge)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Button(onClick = {
+                                    appointmentToUpdate = appointment
+                                    editDate = appointment.date
+                                    editTime = appointment.time
+                                    editDoctorName = appointment.doctorName
+                                    editDepartment = appointment.department
+                                    showUpdateDialog = true
+                                }) {
+                                    Text("Update")
                                 }
-
-                                // Doctor Dropdown
-                                ExposedDropdownMenuBox(
-                                    expanded = isDepartmentDropdownExpanded,
-                                    onExpandedChange = { isDepartmentDropdownExpanded = !isDepartmentDropdownExpanded }
-                                ) {
-                                    OutlinedTextField(
-                                        value = editDoctorNameLocal,
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        label = { Text("Doctor Name") },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .menuAnchor(),
-                                        trailingIcon = {
-                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDepartmentDropdownExpanded)
-                                        }
-                                    )
-                                    ExposedDropdownMenu(
-                                        expanded = isDepartmentDropdownExpanded,
-                                        onDismissRequest = { isDepartmentDropdownExpanded = false }
-                                    ) {
-                                        allDoctors.forEach { doctor ->
-                                            DropdownMenuItem(
-                                                text = { Text(doctor) },
-                                                onClick = {
-                                                    editDoctorNameLocal = doctor
-                                                    isDepartmentDropdownExpanded = false
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // Department Dropdown
-                                ExposedDropdownMenuBox(
-                                    expanded = isDepartmentDropdownExpanded,
-                                    onExpandedChange = { isDepartmentDropdownExpanded = !isDepartmentDropdownExpanded }
-                                ) {
-                                    OutlinedTextField(
-                                        value = editDepartmentLocal,
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        label = { Text("Department") },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .menuAnchor(),
-                                        trailingIcon = {
-                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDepartmentDropdownExpanded)
-                                        }
-                                    )
-                                    ExposedDropdownMenu(
-                                        expanded = isDepartmentDropdownExpanded,
-                                        onDismissRequest = { isDepartmentDropdownExpanded = false }
-                                    ) {
-                                        departments.forEach { department ->
-                                            DropdownMenuItem(
-                                                text = { Text(department) },
-                                                onClick = {
-                                                    editDepartmentLocal = department
-                                                    isDepartmentDropdownExpanded = false
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Button(
-                                        onClick = {
-                                            if (editDateLocal.isNotBlank() && editTimeLocal.isNotBlank() && editDoctorNameLocal.isNotBlank() && editDepartmentLocal.isNotBlank()) {
-                                                databaseHelper.updateAppointment(
-                                                    appointment.id, editDateLocal, editTimeLocal, editDoctorNameLocal, editDepartmentLocal
-                                                )
-                                                appointments[appointments.indexOf(appointment)] = appointment.copy(
-                                                    date = editDateLocal,
-                                                    time = editTimeLocal,
-                                                    doctorName = editDoctorNameLocal,
-                                                    department = editDepartmentLocal
-                                                )
-                                                isEditingLocal = false
-                                                showToast(context, "Appointment updated successfully!")
-                                            } else {
-                                                showToast(context, "Please fill out all fields.")
-                                            }
-                                        }
-                                    ) {
-                                        Text("Save")
-                                    }
-
-                                    Button(
-                                        onClick = { isEditingLocal = false }
-                                    ) {
-                                        Text("Cancel")
-                                    }
-                                }
-                            } else {
-                                Text(text = "Date: ${appointment.date}", style = MaterialTheme.typography.bodyLarge)
-                                Text(text = "Time: ${appointment.time}", style = MaterialTheme.typography.bodyLarge)
-                                Text(text = "Doctor: ${appointment.doctorName}", style = MaterialTheme.typography.bodyLarge)
-                                Text(text = "Department: ${appointment.department}", style = MaterialTheme.typography.bodyLarge)
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    IconButton(onClick = {
-                                        isEditingLocal = true
-                                    }) {
-                                        Icon(Icons.Filled.Edit, contentDescription = "Edit Appointment")
-                                    }
-                                    IconButton(onClick = {
-                                        showDeleteConfirmation = true
-                                        appointmentToDelete = appointment
-                                    }) {
-                                        Icon(Icons.Filled.Delete, contentDescription = "Delete Appointment", tint = Color.Red)
-                                    }
+                                Button(onClick = {
+                                    appointmentToDelete = appointment
+                                    showDeleteDialog = true
+                                }) {
+                                    Text("Delete")
                                 }
                             }
                         }
@@ -302,6 +104,193 @@ fun AdminAppointmentScreen(databaseHelper: DatabaseHelper) {
                 }
             }
         }
+    }
+
+    if (showDeleteDialog && appointmentToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Confirm Deletion") },
+            text = { Text("Are you sure you want to delete this appointment?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    databaseHelper.deleteAppointment(appointmentToDelete!!.id)
+                    showToast(context, "Appointment deleted successfully!")
+                    appointments.remove(appointmentToDelete)
+                    showDeleteDialog = false
+                    appointmentToDelete = null
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    appointmentToDelete = null
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showUpdateDialog && appointmentToUpdate != null) {
+        var isDoctorDropdownExpanded by remember { mutableStateOf(false) }
+        var isDepartmentDropdownExpanded by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showUpdateDialog = false },
+            title = { Text("Update Appointment") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    OutlinedTextField(
+                        value = editDate,
+                        onValueChange = {},
+                        label = { Text("Select Date") },
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            val calendar = Calendar.getInstance()
+                            val datePickerDialog = DatePickerDialog(
+                                context,
+                                { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
+                                    val date = "$year-${month + 1}-$dayOfMonth"
+                                    editDate = date
+                                },
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH),
+                                calendar.get(Calendar.DAY_OF_MONTH)
+                            )
+                            datePickerDialog.show()
+                        },
+                        readOnly = true
+                    )
+
+                    ExposedDropdownMenuBox(
+                        expanded = isDoctorDropdownExpanded,
+                        onExpandedChange = { isDoctorDropdownExpanded = !isDoctorDropdownExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = editTime,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Select Time") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDoctorDropdownExpanded)
+                            }
+                        )
+                        ExposedDropdownMenu(
+                            expanded = isDoctorDropdownExpanded,
+                            onDismissRequest = { isDoctorDropdownExpanded = false }
+                        ) {
+                            availableTimes.forEach { time ->
+                                DropdownMenuItem(
+                                    text = { Text(time) },
+                                    onClick = {
+                                        editTime = time
+                                        isDoctorDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    ExposedDropdownMenuBox(
+                        expanded = isDepartmentDropdownExpanded,
+                        onExpandedChange = { isDepartmentDropdownExpanded = !isDepartmentDropdownExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = editDoctorName,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Doctor Name") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDepartmentDropdownExpanded)
+                            }
+                        )
+                        ExposedDropdownMenu(
+                            expanded = isDepartmentDropdownExpanded,
+                            onDismissRequest = { isDepartmentDropdownExpanded = false }
+                        ) {
+                            allDoctors.forEach { doctor ->
+                                DropdownMenuItem(
+                                    text = { Text(doctor) },
+                                    onClick = {
+                                        editDoctorName = doctor
+                                        isDepartmentDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    ExposedDropdownMenuBox(
+                        expanded = isDepartmentDropdownExpanded,
+                        onExpandedChange = { isDepartmentDropdownExpanded = !isDepartmentDropdownExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = editDepartment,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Department") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDepartmentDropdownExpanded)
+                            }
+                        )
+                        ExposedDropdownMenu(
+                            expanded = isDepartmentDropdownExpanded,
+                            onDismissRequest = { isDepartmentDropdownExpanded = false }
+                        ) {
+                            departments.forEach { department ->
+                                DropdownMenuItem(
+                                    text = { Text(department) },
+                                    onClick = {
+                                        editDepartment = department
+                                        isDepartmentDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (editDate.isNotBlank() && editTime.isNotBlank() && editDoctorName.isNotBlank() && editDepartment.isNotBlank()) {
+                        databaseHelper.updateAppointment(
+                            appointmentToUpdate!!.id, editDate, editTime, editDoctorName, editDepartment
+                        )
+                        appointments[appointments.indexOf(appointmentToUpdate)] = appointmentToUpdate!!.copy(
+                            date = editDate,
+                            time = editTime,
+                            doctorName = editDoctorName,
+                            department = editDepartment
+                        )
+                        showUpdateDialog = false
+                        appointmentToUpdate = null
+                        showToast(context, "Appointment updated successfully!")
+                    } else {
+                        showToast(context, "Please fill out all fields.")
+                    }
+                }) {
+                    Text("Update")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showUpdateDialog = false
+                    appointmentToUpdate = null
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

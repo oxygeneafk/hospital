@@ -28,12 +28,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.eren.hospitalui.admin.AdminHomeScreen
 import com.eren.hospitalui.admin.AdminLoginScreen
-import com.eren.hospitalui.admin.App
 import com.eren.hospitalui.navigationbar.AccountScreen
 import com.eren.hospitalui.navigationbar.AppointmentScreen
 import com.eren.hospitalui.navigationbar.MedicineScreen

@@ -198,6 +198,8 @@ fun AdminMedicineScreen(databaseHelper: DatabaseHelper) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(text = "Title: ${report.title}", style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = "User: ${report.username}", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(text = report.content, style = MaterialTheme.typography.bodyMedium)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(

@@ -223,23 +223,12 @@ fun AppointmentScreen(databaseHelper: DatabaseHelper) {
                 fontWeight = FontWeight.Bold
             )
 
-            LazyColumn(modifier = Modifier.fillMaxHeight(0.5f)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 items(appointments) { appointment ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = "Date: ${appointment.date}", style = MaterialTheme.typography.bodyLarge)
-                            Text(text = "Time: ${appointment.time}", style = MaterialTheme.typography.bodyLarge)
-                            Text(text = "Doctor: ${appointment.doctorName}", style = MaterialTheme.typography.bodyLarge)
-                            Text(text = "Department: ${appointment.department}", style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
+                    AppointmentCard(appointment = appointment)
                 }
             }
         }
@@ -250,6 +239,21 @@ fun AppointmentScreen(databaseHelper: DatabaseHelper) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.Green
             )
+        }
+    }
+}
+
+@Composable
+fun AppointmentCard(appointment: Appointment) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = "Date: ${appointment.date}", style = MaterialTheme.typography.bodyLarge)
+            Text(text = "Time: ${appointment.time}", style = MaterialTheme.typography.bodyLarge)
+            Text(text = "Doctor: ${appointment.doctorName}", style = MaterialTheme.typography.bodyLarge)
+            Text(text = "Department: ${appointment.department}", style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

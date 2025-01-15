@@ -3,9 +3,7 @@ package com.eren.hospitalui.auth
 import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +52,8 @@ fun LoginScreen(
                 is LoginResult.Success -> {
                     onLoginResult(true)
                     loginFailed = false // Başarılı girişte hata durumu sıfırlanır
+                    username = "" // Kullanıcı adı alanı temizlenir
+                    password = "" // Şifre alanı temizlenir
                 }
                 is LoginResult.Failure -> {
                     onLoginResult(false)

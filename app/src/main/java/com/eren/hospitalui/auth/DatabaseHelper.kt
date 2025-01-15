@@ -441,7 +441,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             val id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_REPORT_ID))
             val title = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_REPORT_TITLE))
             val content = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_REPORT_CONTENT))
-            reports.add(Report(id, title, content))
+            reports.add(Report(id, title, content,username))
         }
         cursor.close()
         db.close()
@@ -450,16 +450,20 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     fun getAllReports(): List<Report> {
         val reports = mutableListOf<Report>()
-        val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_REPORTS", null)
-        while (cursor.moveToNext()) {
-            val id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_REPORT_ID))
-            val title = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_REPORT_TITLE))
-            val content = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_REPORT_CONTENT))
-            reports.add(Report(id, title, content))
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT id, title, content, username FROM reports", null)
+        if (cursor.moveToFirst()) {
+            do {
+                val report = Report(
+                    id = cursor.getInt(cursor.getColumnIndexOrThrow("id")),
+                    title = cursor.getString(cursor.getColumnIndexOrThrow("title")),
+                    content = cursor.getString(cursor.getColumnIndexOrThrow("content")),
+                    username = cursor.getString(cursor.getColumnIndexOrThrow("username")) // Yeni eklenen sütun
+                )
+                reports.add(report)
+            } while (cursor.moveToNext())
         }
         cursor.close()
-        db.close()
         return reports
     }
 
@@ -507,5 +511,6 @@ data class Doctor(
 data class Report(
     val id: Int,
     val title: String,
-    val content: String
+    val content: String,
+    val username: String
 )

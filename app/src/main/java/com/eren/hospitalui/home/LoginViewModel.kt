@@ -23,7 +23,7 @@ class LoginViewModel(private val context: Context) : ViewModel() {
     private val _loginResult = MutableStateFlow<LoginResult>(LoginResult.None)
     val loginResult: StateFlow<LoginResult> = _loginResult
 
-    private val _loggedInUser = MutableStateFlow<User?>(null)
+    val _loggedInUser = MutableStateFlow<User?>(null)
     val loggedInUser: StateFlow<User?> = _loggedInUser
 
     var username: String = ""
@@ -61,5 +61,39 @@ class LoginViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+    // Kullanıcı bilgilerini güncelleme fonksiyonu ekleniyor
+    fun updateUser(
+        id: Int,
+        name: String,
+        surname: String,
+        username: String,
+        password: String,
+        bloodGroup: String?,
+        address: String?
+    ) {
+        viewModelScope.launch {
+            // Update işlemi sırasında dönen int değerini kontrol et
+            val affectedRows = databaseHelper.updateUser(
+                id = id,
+                name = name,
+                surname = surname,
+                username = username,
+                password = password,
+                bloodGroup = bloodGroup.toString(),
+                address = address.toString()
+            )
+
+            // Eğer etkilenen satır sayısı 0'dan büyükse başarılı sayılır
+            val success = affectedRows > 0
+
+            if (success) {
+                // Güncelleme başarılıysa kullanıcıyı tekrar al ve state'i güncelle
+                _loggedInUser.value = databaseHelper.getUserDetails(username)
+            } else {
+                // Eğer update başarısızsa hata mesajı verebilirsiniz
+                Toast.makeText(context, "Güncelleme başarısız", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 }
 
